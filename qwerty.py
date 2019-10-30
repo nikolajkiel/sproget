@@ -9,7 +9,6 @@ import tkinter as Tk
 from tkinter import ttk, simpledialog
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
-from BLAEST_LIB.wrappers import wrapper_diff_wrapt as timer
 import matplotlib.pyplot as plt
 
 LARGER_FONT= ("Arial", 16)
@@ -25,6 +24,18 @@ import requests
 import io
 import time
 from multiprocessing import Pool
+
+
+import wrapt
+
+@wrapt.decorator
+def timer(wrapped, instance, args, kwargs, offset_length=25):
+    start = dt.datetime.now()
+    rv = wrapped(*args, **kwargs)
+    end = dt.datetime.now()
+    diff = end-start
+    print('{.__name__}:{} {:10.4f}s'.format(wrapped,' '*(offset_length-wrapped.__name__.__len__()),diff.total_seconds()))
+    return rv
 
 
 
@@ -55,7 +66,7 @@ def get_sound(search_term):
 
 
 
-stop
+
 
 
 
@@ -67,11 +78,11 @@ test = get_sound('er')
 #    sound2 = fin.read()
 
 
-import pygame
-pygame.mixer.init()
-pygame.mixer.music.load(test)
-pygame.mixer.music.rewind()
-pygame.mixer.music.play()
+#import pygame
+#pygame.mixer.init()
+#pygame.mixer.music.load(test)
+#pygame.mixer.music.rewind()
+#pygame.mixer.music.play()
 
 
 #pygame.init()
