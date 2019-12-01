@@ -15,7 +15,7 @@ LARGER_FONT= ("Arial", 16)
 LARGE_FONT= ("Arial", 12)
 import datetime as dt
 
-
+# hello
 
 
 import numpy as np
@@ -210,3 +210,26 @@ if __name__ == '__main__':
     root = Tk.Tk()                                             # root for mainloop
     p1 = Page1(root)#.pack(side="top", fill="both", expand=True)
     root.mainloop()
+
+
+
+
+
+#        @timer
+#    @classmethod
+#    def __create_function_gui__(cls, *args, **kwargs):
+#        cls = cls(**kwargs)
+#
+#        cls.label = Tk.Label(cls, text  = '')
+#        cls.label.grid(row=10,column = 5)
+#
+#        cls.funcs = []
+#
+#        for func in args:
+#            cls.row += 1
+#            frame = Tk.Frame(cls)
+#            frame.label = Tk.Label(frame, text = f'{[func.__qualname__,"No name"][func.__qualname__==None]}')
+#            frame.label.grid(row=0)
+#            frame.grid(row=cls.row,column=0)
+#            func = cls.__entry_vars__(func,frame)
+#            cls.funcs.append(func)
