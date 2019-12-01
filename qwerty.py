@@ -17,13 +17,17 @@ import datetime as dt
 
 
 
+
 import numpy as np
 
 
 import requests
 import io
-import time
+import time, re
 from multiprocessing import Pool
+import pygame
+import bs4
+from functools import lru_cache
 
 
 import wrapt
@@ -38,58 +42,61 @@ def timer(wrapped, instance, args, kwargs, offset_length=25):
     return rv
 
 
-
+#@lru_cache()
 def get_sound(search_term):
     print(search_term)
+
     url = f'https://sproget.dk/lookup?SearchableText={search_term}'
     response = requests.get(url)
+#    pattern = re.compile(r'\.mp3')
+#    matches = pattern.finditer(str(response.content))
+#    for match in matches:
+#        print(match)
+    soup = bs4.BeautifulSoup(response.content, 'html.parser')
+    sounds = soup.find_all('audio')
+    name, mp3 = None, None
+    names = []
+    while mp3 is None:
+        for i,sound in enumerate(sounds):
+            elements = list(sound.previous_elements)[:6]
+            for elem in elements:
+                if elem.__str__().startswith('<span class="k">'):
+                    name = elem.contents[0]
+                    if name == search_term:
+                        mp3 = sound['src']
+                        break;break;break#;continue
+#                    else:
+#                        names.append(name)
+        break
 
-    mp3 = str(response.content)[str(response.content).find('.mp3')-100+55:str(response.content).find('.mp3')+4]
+    name = name if name is not None else search_term
+    if mp3 is None:
+        # Fall-back
+        try:
+            mp3 = sounds[0]['src']
+#        mp3 = str(response.content)[str(response.content).find('.mp3')-100+55:str(response.content).find('.mp3')+4]
+
+        except IndexError:
+            print('No sounds found!')
+            return name, b''
+
     bts = io.BytesIO(requests.get(mp3).content)
-#    bts.seek(0)
-    return bts#response.content
+    return [name, bts]
 
 
 
 
-#def f(s):
-#    return s*2
+
+
 #p = Pool(3)
 #res = p.map(get_sound, ['jeg', 'telefon'])
+#stoip
 #if __name__ == '__main__':
 #    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
 #    p = Pool(processes = 4)
-#    print(p.map( f, ['jeg', 'telefon']   ))
-#    for r in ['jeg', 'er']:
-#        print(f(r))
+#    print(p.apply_async( get_sound, ['jeg', 'telefon']   ))
 
 
-
-
-
-
-
-
-
-test = get_sound('er')
-#mp3 = str(test)[str(test).find('.mp3')-100+55:str(test).find('.mp3')+4]
-#sound = requests.get(mp3)
-#with open('hest.mp3','rb') as fin:
-#    sound2 = fin.read()
-
-
-#import pygame
-#pygame.mixer.init()
-#pygame.mixer.music.load(test)
-#pygame.mixer.music.rewind()
-#pygame.mixer.music.play()
-
-
-#pygame.init()
-#pygame.mixer.init()
-##sound = pygame.mixer.Sound(sound2)
-#sound = pygame.mixer.Sound(buffer=sound2)
-#stop
 #class Page(Tk.Frame):                               ####################
 #    def __init__(self, *args, **kwargs):            ##          KEEP  ##
 #        Tk.Frame.__init__(self, *args, **kwargs)    ##    <---- PAGE  ##
@@ -119,10 +126,11 @@ class Page1(Tk.Frame):                              ## <-- CLASS NAME ##
 #        self.canvasPanel.rowconfigure(0,weight=1)
 
         self.legend_var = Tk.StringVar(self, '')
-        self.legebdlegend = ttk.Label(self.frame, textvariable = self.legend_var, font=LARGER_FONT).grid(row=10,columnspan=100)#(row=0,column=0)#, command=lambda: self._set_date_db(time='start')))
+        self.legebdlegend = ttk.Entry(self.frame, textvariable = self.legend_var, font=LARGER_FONT).grid(row=10,columnspan=100)#(row=0,column=0)#, command=lambda: self._set_date_db(time='start')))
 
         self.build_keyboard()
         self.sounds = {}
+        pygame.mixer.init()
 
 
     @staticmethod
@@ -157,7 +165,7 @@ class Page1(Tk.Frame):                              ## <-- CLASS NAME ##
         elif (now-self.last_press).total_seconds() > 4:
             self.legend_var.set( key.char )
         else:
-            self.legend_var.set( self.legend_var.get() + key.char )
+            self.legend_var.set( self.legend_var.get())# + key.char )
         self.last_press = now
 #        self.parent.update_idletasks()
         print(f'key = {key}')
@@ -165,16 +173,36 @@ class Page1(Tk.Frame):                              ## <-- CLASS NAME ##
     @timer
     def play(self, *args, **kwargs):
         text = self.legend_var.get()
-        play_sounds = []
-        for word in text.split():
-            if word not in self.sounds.keys():
-                self.sounds[word] = get_sound(word)
-            play_sounds.append(self.sounds[word])
+        play_sounds = {}
+        words = text.split()
 
-        for sound in play_sounds:
-            pygame.mixer.music.load(sound)
-            pygame.mixer.music.play()
-            time.sleep(1)
+
+
+        for word in text.split():
+#            if word not in self.sounds.keys():
+#                word, sound = get_sound(word)
+#                self.sounds[word] = sound
+#            play_sounds.append(self.sounds[word])
+            key, sound = get_sound(word)
+            play_sounds[key] = sound
+
+        self.legend_var.set('')
+#        self.update_idletasks()
+        self.update()
+        for key,sound in play_sounds.items():
+            try:
+                sound.seek(0)
+                audio = pygame.mixer.music.load(sound)
+                play  = pygame.mixer.music.play()
+                self.legend_var.set(f'{self.legend_var.get()} {key}'.strip())
+#                self.update_idletasks()
+                self.update()
+                while pygame.mixer.music.get_busy():
+#                    print('waiting...')
+                    time.sleep(0.05)
+            except:
+                pass
+
 
 
 
@@ -182,26 +210,3 @@ if __name__ == '__main__':
     root = Tk.Tk()                                             # root for mainloop
     p1 = Page1(root)#.pack(side="top", fill="both", expand=True)
     root.mainloop()
-
-
-
-
-
-#        @timer
-#    @classmethod
-#    def __create_function_gui__(cls, *args, **kwargs):
-#        cls = cls(**kwargs)
-#
-#        cls.label = Tk.Label(cls, text  = '')
-#        cls.label.grid(row=10,column = 5)
-#
-#        cls.funcs = []
-#
-#        for func in args:
-#            cls.row += 1
-#            frame = Tk.Frame(cls)
-#            frame.label = Tk.Label(frame, text = f'{[func.__qualname__,"No name"][func.__qualname__==None]}')
-#            frame.label.grid(row=0)
-#            frame.grid(row=cls.row,column=0)
-#            func = cls.__entry_vars__(func,frame)
-#            cls.funcs.append(func)
