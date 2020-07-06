@@ -1,1 +1,4 @@
 pygame
+wtforms
+Flask-WTF
+beautifulsoup4
