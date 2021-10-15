@@ -2,3 +2,6 @@ pygame
 wtforms
 Flask-WTF
 beautifulsoup4
+email_validator
+uvicorn
+fastapi

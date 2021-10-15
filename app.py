@@ -3,7 +3,7 @@ from wtforms import Form
 from forms import ContactForm
 import sys
 app = Flask(__name__)
-app.config.from_object('config.ProductionConfig')
+app.config.from_object('config.DevelopmentConfig')
 
 
 @app.route('/')
@@ -29,12 +29,17 @@ def question():
         print(42, sys.stderr)
         return render_template('buttons.html', form=form)
 
-@app.route('/contact', methods=('GET', 'POST'))
+@app.route('/contact', methods=['GET', 'POST'])
 def contact():
-    form = ContactForm()
-    if form.validate_on_submit():
-        return redirect(url_for('success'))
+    form = ContactForm(request.form)
+    if request.method == 'POST':#form.validate():#form.validate_on_submit():
+        return 'POST'
+        # return render_template('index.html')
     return render_template('contact.html', form=form)
 
+@app.route('/success')
+def success():
+    return '42'
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

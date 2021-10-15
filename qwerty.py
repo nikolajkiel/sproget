@@ -43,6 +43,7 @@ def timer(wrapped, instance, args, kwargs, offset_length=25):
 
 
 #@lru_cache()
+@timer
 def get_sound(search_term):
     print(search_term)
 
